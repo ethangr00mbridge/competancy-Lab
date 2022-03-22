@@ -1,0 +1,76 @@
+import time
+from ultrasonic import sonic
+from motor import Motor
+from machine import Pin, PWM
+
+pwm = PWM(Pin(15))
+pwm.freq(50)
+
+def setServoAngle(angle):
+    position = int(8000*(angle/180) + 1000)
+    pwm.duty_u16(position)
+
+IR_sensor = Pin(26, Pin.IN)
+
+TRIG = 3
+ECHO = 2
+ultrasonic_sensor = sonic(TRIG, ECHO)
+motor_left = Motor("left", 11, 10, 7)
+motor_right = Motor("right", 8, 9, 6)
+
+closest_distance = 150
+
+time.sleep(10)
+
+while IR_sensor.value() == 0:
+    dist = ultrasonic_sensor.distance_mm()
+
+    mindist = 1
+
+    for pos in range(50, 130, 5):
+        mindist = dist
+        setServoAngle(pos)
+        time.sleep(0.01)
+        if mindist > dist:
+            mindist = dist
+
+
+    for pos in range(130, 50, -5):
+        setServoAngle(pos)
+        time.sleep(0.01)
+        if mindist > dist:
+            mindist = dist
+
+    if mindist <= 150:
+        motor_left.set_backwards()
+        motor_left.duty(50)
+
+        motor_right.set_backwards()
+        motor_right.duty(50)
+
+        time.sleep(1)
+
+        motor_left.set_forwards()
+        motor_left.duty(50)
+
+        motor_right.set_backwards()
+        motor_right.duty(50)
+
+        time.sleep(1)
+
+        motor_left.duty(0)
+        motor_right.duty(0)
+
+
+    if mindist > 150:
+        motor_left.set_forwards()
+        motor_left.duty(50)
+
+        motor_right.set_forwards()
+        motor_right.duty(50)
+
+        time.sleep(0.1)
+
+        motor_left.duty(0)
+        motor_right.duty(0)
+
